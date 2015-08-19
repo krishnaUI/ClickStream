@@ -1,0 +1,52 @@
+
+Putting File on HDFS
+--------------------
+hadoop fs –put home/cloudera/MiniProjectSai/usagov.json MiniProject7
+
+Hadoop Streaming Using Python for preprocessing
+-----------------------------------------------
+hadoop jar /usr/lib/hadoop-0.20-mapreduce/contrib/streaming/hadoop-streaming-2.0.0-mr1-cdh4.4.0.jar -file /home/cloudera/MiniProjectSai/jsonReader.py -mapper /home/cloudera/MiniProjectSai/jsonReader.py -reducer org.apache.hadoop.mapred.lib.IdentityReducer -input MiniProject7/usagov.json -output LargeFile/
+
+Task One
+--------
+Pig > clicks = LOAD ‘LargeFile/part-00000' USING PigStorage(' ') AS (url:chararray,country:chararray,month:int);
+
+    > grpd = GROUP clicks BY url;
+
+    > cnt = foreach grpd generate group, COUNT(clicks) as urlcount;
+
+    > dorder = order cnt by urlcount desc;
+
+    > top10 = limit dorder 10;
+
+    > STORE top10 INTO 'top10Urls';
+
+Task Two
+--------
+Pig > clicks = LOAD 'LargeFile/part-00000' USING PigStorage(' ') AS (url:chararray,country:chararray,month:int);
+
+    > grpCountryUrl = GROUP clicks BY (country,url);
+
+    > countryUrlCount = FOREACH grpCountryUrl GENERATE FLATTEN(group) AS (country,url),COUNT(clicks) AS Country_url_count;
+
+    > STORE countryUrlCount INTO 'countryUrlCount';
+
+Map-Reduce -> hadoop jar Project7.jar com.insofe.project7.CountryURLCount countryUrlCount/part-r-00000 countryUrlOutput
+
+Copying File into local directory -> hadoop fs -get countryUrlOutput
+
+
+Task Three
+-----------
+Pig > clicks = LOAD 'LargeFile/part-00000' USING PigStorage(' ') AS (url:chararray,country:chararray,month:int);
+
+    > cntMonthlyUrl = GROUP clicks BY (month, url);
+
+    > MonthlyUrlCount = FOREACH cntMonthlyUrl GENERATE FLATTEN(group) AS (month, url),COUNT(clicks) AS month_url_count;
+
+    > STORE MonthlyUrlCount INTO 'MonthlyUrlCount';
+
+Map-Reduce -> hadoop jar Project7.jar com.insofe.project7.MonthURLCount MonthlyUrlCount/part-r-00000 monthUrlOutput
+
+Copying File into local directory -> hadoop fs -get monthUrlOutput
+
